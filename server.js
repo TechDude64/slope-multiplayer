@@ -4,8 +4,20 @@ const { v4: uuidv4 } = require('uuid');
 
 const app = express();
 const PORT = process.env.PORT || 10000;
+
+// Add a basic health check route
+app.get('/', (req, res) => {
+    res.status(200).send('Server is running');
+});
+
 const server = app.listen(PORT, () => console.log(`Listening on ${PORT}`));
-const wss = new WebSocket.Server({ server });
+const wss = new WebSocket.Server({ noServer: true });
+
+server.on('upgrade', (request, socket, head) => {
+    wss.handleUpgrade(request, socket, head, (ws) => {
+        wss.emit('connection', ws, request);
+    });
+});
 
 const rooms = {};
 const TICK_RATE = 60;
