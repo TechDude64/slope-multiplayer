@@ -94,7 +94,7 @@ const gameLoop = (roomId) => {
 
     room.t += TICK_TIME / 1000; // Increment time in seconds
     const speed = 0.5 + Math.min(3.5, room.t * 0.12);
-    room.score += speed * (TICK_TIME / 1000) * 10;
+    room.score += speed * (TICK_TIME / 1000);
 
     // Update obstacles
     for (let i = room.obstacles.length - 1; i >= 0; i--) {
@@ -117,7 +117,7 @@ const gameLoop = (roomId) => {
 
         // Smooth lane interpolation
         const targetX = LANE_X[player.laneTarget];
-        player.laneCurrent += (targetX - player.laneCurrent) * 0.15; // Smoothing factor
+        player.laneCurrent += (targetX - player.laneCurrent) * 0.1; // Smoothing factor
         player.x = player.laneCurrent;
 
         // Collision detection
