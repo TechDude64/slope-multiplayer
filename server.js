@@ -73,8 +73,9 @@ const stopGame = (roomId) => {
     console.log(`Stopping game in room ${roomId}`);
     clearInterval(room.gameInterval);
     room.running = false;
-    
+
     broadcastToRoom(roomId, { type: 'gameOver', roomId });
+    broadcastToRoom(roomId, { type: 'returnToLobby', roomId });
 };
 
 const spawnObstacle = (room, z) => {
@@ -200,6 +201,28 @@ wss.on("connection", (ws) => {
                         }
                     }
                     break;
+
+                case "returnToLobby":
+                    if (!room.running && room.returnToLobbyVotes) {
+                        // Record the player's vote to return to lobby
+                        room.returnToLobbyVotes[playerId] = true;
+
+                        // Check if all players have voted to return to lobby
+                        const allPlayersVoted = Object.keys(room.players).every(id => room.returnToLobbyVotes[id]);
+
+                        if (allPlayersVoted) {
+                            console.log(`All players voted to return to lobby in room ${roomId}`);
+                            broadcastToRoom(roomId, { type: 'returnToLobby', roomId });
+                        } else {
+                            // Send updated votes to all players
+                            broadcastToRoom(roomId, {
+                                type: 'lobbyVotes',
+                                roomId,
+                                payload: { votes: room.returnToLobbyVotes }
+                            });
+                        }
+                    }
+                    break;
             }
 
         } catch (e) {
@@ -217,9 +240,12 @@ wss.on("connection", (ws) => {
 
             const room = rooms[roomId];
             if (Object.keys(room.players).length === 0) {
-                console.log(`Room ${roomId} is empty, stopping game and deleting.`);
-                stopGame(roomId);
-                delete rooms[roomId];
+                if (room.running) {
+                    console.log(`Room ${roomId} is empty, stopping game.`);
+                    stopGame(roomId);
+                }
+                // Don't delete the room when game is over, keep it for players to return
+                // delete rooms[roomId];
             } else {
                 broadcastToRoom(roomId, {
                     type: "state",
